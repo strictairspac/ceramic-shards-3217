@@ -92,3 +92,27 @@ summary { cursor:pointer; font-weight:600; color:var(--accent-dark); }
   th,td { padding:.5rem .55rem; }
 }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition: none !important; } }
+
+/* 搬迁回执台账 */
+.ledger-head { margin-bottom: 1.5rem; }
+.ledger-item { border: 1px solid var(--line); background: var(--sheet); border-radius: var(--radius); padding: 1rem 1.1rem; margin: .9rem 0; }
+.ledger-item h3 { margin: 0 0 .8rem; font-size: 1.05rem; }
+.ledger-item h3 small { font-weight: 400; color: var(--muted); margin-left: .4rem; }
+.step-pipeline { display: flex; align-items: stretch; gap: .5rem; flex-wrap: wrap; }
+.step-cell { flex: 1 1 9rem; min-width: 8.5rem; border: 1px solid var(--line); border-radius: var(--radius); padding: .65rem .75rem; display: grid; gap: .35rem; background: var(--soft); }
+.step-cell strong { font-size: .95em; }
+.step-cell small { display: block; line-height: 1.45; }
+.step-arrow { align-self: center; color: var(--muted); font-weight: 700; }
+.step-cell.done { border-color: oklch(.78 .11 151); background: oklch(.96 .035 151); }
+.step-cell.retrying, .step-cell.blocked, .step-cell.failed { border-color: oklch(.72 .14 55); background: oklch(.95 .05 55); }
+.step-state { display: inline-block; justify-self: start; border: 1px solid var(--line); border-radius: var(--radius); padding: .05em .55em; font-size: .82em; white-space: nowrap; }
+.step-state[data-state='done'] { color: oklch(.35 .09 150); border-color: oklch(.78 .11 151); }
+.step-state[data-state='retrying'] { color: oklch(.38 .12 55); border-color: oklch(.72 .14 55); }
+.step-state[data-state='failed'], .step-state[data-state='blocked'] { color: oklch(.36 .15 27); background: oklch(.94 .045 26); border-color: oklch(.7 .16 27); }
+.receipt-form { margin-top: .9rem; border-top: 1px dashed var(--line); padding-top: .9rem; display: grid; gap: .8rem; }
+#replan-result details { margin: .8rem 0; }
+#replan-result .table-scroll { margin-top: .5rem; }
+@media (max-width: 767px) {
+  .step-arrow { display: none; }
+  .step-cell { flex-basis: 100%; }
+}

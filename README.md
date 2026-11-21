@@ -8,6 +8,7 @@
 - 预检批次
 - 重分片预算
 - 搬迁清单
+- 搬迁回执台账（复核交接后按「复制校验 → 归属切换 → 源副本清理」记账，规则见 [BUSINESS.md](BUSINESS.md)）
 
 ## 本地运行
 
@@ -45,7 +46,21 @@ docker compose up -d --build --wait
 | db | MySQL 8.0，持久卷保存档案、执行、证据及审计 |
 | redis | Redis 7，追加日志卷保存队列唤醒信号 |
 
-编辑 `backend/src/services/domain.py` 可修改试算方法与业务表单说明。API 路由、数据定义和页面位于 `backend/src/routes/`、`backend/src/models/` 与 `frontend/src/pages/`。开发时更新源文件后重新构建对应服务。
+编辑 `backend/src/services/domain.py` 可修改试算方法与业务表单说明。搬迁回执台账位于 `backend/src/services/ledger.py`，回执步骤与台账状态枚举在 `src/constants/workflow.py`，台账表（`move_ledgers`、`move_ledger_items`、`move_receipts`）定义在 `backend/src/models/tables.py`。API 路由、数据定义和页面位于 `backend/src/routes/`、`backend/src/models/` 与 `frontend/src/pages/`。开发时更新源文件后重新构建对应服务。
+
+### 本地回归（无需 Docker）
+
+`tools/` 下的脚本用 SQLite 临时库与 jsdom 验证台账状态机、HTTP 接口与前端渲染，不污染演示库：
+
+```sh
+# 后端：回执顺序/重试/冲突/占用重排（36 项）与 HTTP 接口/权限/并发（14 项）
+python -I tools/test_ledger.py
+python -I tools/test_api.py
+# 前端：台账页渲染与回执/重排交互（19 项，需在含 jsdom 的 Node 环境运行）
+node tools/test_frontend.mjs
+```
+
+SQLite 仅用于本地验证；生产使用 MySQL，回执登记在条目行锁（`FOR UPDATE`）内串行化，并对唯一约束竞争返回 409。
 
 `.env.example` 提供 `FRONTEND_PORT`、`BACKEND_PORT`、`DB_PORT`、`DB_PASSWORD`、`AUTH_KEY` 、`SEED_DEMO` 与 `NETWORK_SUBNET`。修改 `NETWORK_SUBNET` 可避开本机现有容器网段。所有发布的端口绑定本机回环地址。接入独立部署前需配置自己的凭据并按业务范围做独立验收。
 

@@ -16,6 +16,11 @@ def log(conn, actor, action, reference):
     conn.execute(audit.insert().values(actor=actor, action=action, reference=str(reference), created_at=utc_time()))
 
 
+def log_replan(ledger_id, actor):
+    with engine.begin() as conn:
+        log(conn, actor, 'replan', ledger_id)
+
+
 def recent(table):
     with engine.connect() as conn:
         return [dict(row) for row in conn.execute(select(table).order_by(table.c.id.desc()).limit(100)).mappings()]
@@ -101,4 +106,9 @@ def review(identity, note, actor):
         if count != 1:
             raise HTTPException(409, '该证据已经复核')
         log(conn, actor, 'review', identity)
-        return found(conn, evidence, identity)
+        # 复核交接即建立搬迁回执台账，清单逐行等待复制校验/归属切换/源副本清理回执。
+        from src.services.ledger import ensure_ledger
+        ledger = ensure_ledger(conn, identity, actor)
+        result = found(conn, evidence, identity)
+        result['ledger_id'] = ledger['id']
+        return result

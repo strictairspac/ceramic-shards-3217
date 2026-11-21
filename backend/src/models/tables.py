@@ -1,5 +1,5 @@
-from sqlalchemy import (JSON, Column, ForeignKey, Integer, MetaData, String,
-                        Table, Text)
+from sqlalchemy import (JSON, BigInteger, Boolean, Column, ForeignKey, Integer,
+                        MetaData, String, Table, Text, UniqueConstraint)
 
 schema = MetaData()
 users = Table('accounts', schema,
@@ -38,3 +38,36 @@ audit = Table('audit_events', schema,
     Column('action', String(32), nullable=False),
     Column('reference', String(50), nullable=False),
     Column('created_at', String(32), nullable=False))
+# 搬迁回执台账：一份经复核交接的搬迁清单对应一本台账，清单逐行登记为台账条目。
+ledgers = Table('move_ledgers', schema,
+    Column('id', Integer, primary_key=True),
+    Column('evidence_id', ForeignKey('business_evidence.id'), nullable=False, unique=True),
+    Column('snapshot_id', String(64), nullable=False),
+    Column('status', String(20), nullable=False, index=True),
+    Column('snapshot', JSON, nullable=False),
+    Column('created_at', String(32), nullable=False),
+    Column('updated_at', String(32), nullable=False))
+ledger_items = Table('move_ledger_items', schema,
+    Column('id', Integer, primary_key=True),
+    Column('ledger_id', ForeignKey('move_ledgers.id'), nullable=False, index=True),
+    Column('seq', Integer, nullable=False),
+    Column('batch_id', String(64), nullable=False),
+    Column('source_node', String(64), nullable=False),
+    Column('target_node', String(64), nullable=False),
+    Column('size_bytes', BigInteger, nullable=False),
+    Column('step', String(20), nullable=False),
+    Column('blocked', Boolean, nullable=False, server_default='0'),
+    Column('updated_at', String(32), nullable=False),
+    UniqueConstraint('ledger_id', 'batch_id', name='uq_ledger_batch'))
+# 每一步最多两条有效回执：初次一条、重试一条；同一步内容冲突在此表层面之前由服务判定。
+receipts = Table('move_receipts', schema,
+    Column('id', Integer, primary_key=True),
+    Column('item_id', ForeignKey('move_ledger_items.id'), nullable=False, index=True),
+    Column('step', String(20), nullable=False),
+    Column('attempt', Integer, nullable=False),
+    Column('outcome', String(20), nullable=False),
+    Column('content', JSON, nullable=False),
+    Column('actor', String(40), nullable=False),
+    Column('note', String(500)),
+    Column('created_at', String(32), nullable=False),
+    UniqueConstraint('item_id', 'step', 'attempt', name='uq_item_step_attempt'))
